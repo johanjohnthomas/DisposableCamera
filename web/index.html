@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f8c735"><meta name="description" content="Ten moments, through your eyes. A little disposable camera for a night to remember.">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Ten Frames — Make a little memory</title>
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="icons/icon-192.png"><link rel="manifest" href="manifest.webmanifest"><link rel="stylesheet" href="style.css">
+<script type="module" src="app.js"></script>
+</head>
+<body>
+<header class="site-header"><a class="wordmark" href="./" aria-label="Ten Frames home"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="13"/><path d="m9 5 13 2 7 11-7 10-13-2-6-11Zm0 0 2 11 11-9M3 15l8 1 5 12m13-10-13-1 6 11"/></svg>TEN FRAMES</a><span class="header-note">GOOD TIMES. NO RETAKES.</span><a class="admin-link" href="admin.html">For the host <span aria-hidden="true">↗</span></a></header>
+<div id="demo-banner" class="banner" role="region" aria-label="Local preview notice" hidden>LOCAL PREVIEW · Photos stay on this device. <a href="./">Leave preview</a></div>
+<main id="main">
+<section id="welcome" class="welcome">
+<div class="intro"><p class="event-name" data-event>A night to remember</p><h1>Make a little<br><span>memory.</span></h1><p class="intro-copy">The blurry laughs. The dance-floor faces.<br>The moments you almost missed.</p><p class="intro-copy">One little camera. Ten frames.<br>All yours to make.</p><form id="join-form"><label for="username">First, put your name on it.</label><div class="input-row"><input id="username" name="username" placeholder="Your name" maxlength="30" minlength="1" required autocomplete="nickname"><button id="join" class="button red" type="submit">Let’s shoot <span aria-hidden="true">↗</span></button></div><p class="fine-print">Your photos are shared with the event host.</p></form><p id="setup-note" class="setup-note" hidden>The event camera isn’t connected yet. <a href="?demo=1">Try a local preview</a>.</p><p class="status" id="join-status" role="status"></p></div>
+<div id="camera-mount" class="camera-mount">
+<div class="camera" id="camera">
+<div class="camera-top"><div class="camera-brand">TEN<br>FRAMES<span>POINT. SHOOT. KEEP.</span></div><div class="flash-housing" aria-hidden="true"><div class="flash-glass"></div></div><div class="iso">ISO<br><strong>400</strong></div></div>
+<div class="hardware"><div class="viewfinder" id="viewfinder"><video id="video" autoplay playsinline muted aria-label="Live camera preview"></video><div class="viewfinder-idle" id="camera-idle"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M12 20h10l5-7h10l5 7h10v31H12Z"/><circle cx="32" cy="35" r="10"/></svg><span>THE GOOD STUFF<br>HAPPENS HERE.</span></div><span class="finder-corner tl"></span><span class="finder-corner tr"></span><span class="finder-corner bl"></span><span class="finder-corner br"></span><span class="live-label" id="live-label" hidden><i></i> LIVE</span><span class="film-label" id="film-label">WARM 400</span><div id="shutter-flash"></div></div><div class="hardware-footer"><span>35mm memories, reimagined.</span><span class="frame-counter"><b id="remaining">10</b> / 10</span></div></div>
+<div class="camera-controls"><button id="filter-button" class="camera-tool" disabled aria-label="Change filter"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="9" r="5"/><circle cx="15" cy="9" r="5"/><circle cx="12" cy="15" r="5"/></svg><span id="filter-name">Warm 400</span></button><button id="shutter" class="shutter" disabled aria-label="Take photo"><span></span></button><button id="roll-button" class="camera-tool" disabled aria-label="View your photos"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="m3 16 6-6 5 5 3-3 4 4"/><circle cx="16" cy="8" r="1"/></svg><span>Your roll <b id="roll-count">0</b></span></button></div>
+<div class="camera-bottom"><span>DISPOSABLE CAMERA CLUB</span><span class="barcode" aria-hidden="true"></span><span>10 EXP.</span></div>
+</div><div class="camera-caption"><span class="little-star" aria-hidden="true">✳</span> A little less perfect. A lot more you.</div>
+</div>
+</section>
+<section id="session" class="session" hidden><div class="session-heading"><div><p class="event-name" data-event></p><h1><span id="guest-name"></span>’s camera.</h1></div><span class="session-note">Be here. Take the photo.</span></div><div id="active-camera"></div><div class="session-status"><p id="camera-status" class="status" role="status">Starting your camera…</p><button id="retry-camera" class="text-button" hidden>Enable camera</button><button id="retry-upload" class="button red" hidden>Retry saving photo</button></div><div class="film-strip" id="film-strip" aria-label="Ten photo slots"></div><p class="fine-print centered">Ten chances to catch a feeling. No deleting, no do-overs.</p></section>
+<section id="gallery" class="gallery" hidden><div class="gallery-heading"><div><h1>Your roll.</h1><p id="gallery-subtitle"></p></div><button id="back-camera" class="button outline">Back to camera</button></div><div id="photo-grid" class="photo-grid"></div><p class="status" id="gallery-status" role="status"></p></section>
+</main>
+<footer class="site-footer"><span>TEN FRAMES. ONE GOOD NIGHT.</span><button id="install" class="text-button" hidden>Install camera</button><span>Made for being in the moment.</span></footer>
+<dialog id="photo-dialog"><button class="dialog-close" aria-label="Close photo">×</button><img id="detail-photo" alt="Your captured memory"><a id="download-photo" class="button red" download>Save photo</a></dialog>
+</body></html>
