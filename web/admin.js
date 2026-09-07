@@ -12,7 +12,7 @@ async function render() {
   clearGallery($('#photo-grid'));
   const shown = filtered(); $('#photo-count').textContent = `${shown.length} ${shown.length === 1 ? 'photo' : 'photos'} loaded`;
   $('#download-all').disabled = !shown.length;
-  if (!shown.length) { const empty = document.createElement('p'); empty.className = 'empty-roll'; empty.textContent = shots.length ? 'No guests match that name.' : 'The first memories will appear here once your guests start shooting.'; $('#photo-grid').append(empty); }
+  if (!shown.length) { const empty = document.createElement('p'); empty.className = 'empty-roll'; empty.textContent = shots.length ? 'No guests match that name.' : 'No photos yet.'; $('#photo-grid').append(empty); }
   for (let i = 0; i < shown.length; i += 4) {
     if (version !== renderVersion) return;
     await Promise.all(shown.slice(i, i + 4).map(shot => addPhoto($('#photo-grid'), shot, value => photoBlob(value.object_path, 'admin'), { admin: true })));
@@ -20,12 +20,12 @@ async function render() {
 }
 async function load(reset = true) {
   if (loading) return;
-  loading = true; $('#load-more').disabled = true; $('#refresh').disabled = true; status('Loading the contact sheet…');
+  loading = true; $('#load-more').disabled = true; $('#refresh').disabled = true; status('Loading photos…');
   try {
     const result = await rpc('list_event_photos', { p_offset: reset ? 0 : shots.length, p_limit: 50 }, 'admin');
     shots = reset ? result.photos : [...shots, ...result.photos];
     more = result.photos.length === 50; $('#load-more').hidden = !more;
-    await render(); status(more ? 'Load more to include the next 50 photos in your contact sheet.' : 'All event photos are loaded.');
+    await render(); status(more ? 'Load more to include the next 50 photos in your gallery.' : 'All event photos are loaded.');
   } catch (error) { status(error.message); }
   finally { loading = false; $('#load-more').disabled = false; $('#refresh').disabled = false; }
 }

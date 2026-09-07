@@ -33,7 +33,7 @@ function applyFilm(data, filter) {
   }
 }
 export async function capture(video, filter) {
-  if (!video.videoWidth || video.readyState < 2) throw new Error('The camera is still starting. Try again in a moment.');
+  if (!video.videoWidth || video.readyState < 2) throw new Error('The camera is starting. Try again.');
   const canvas = document.createElement('canvas');
   // Match the 4:3 cover crop shown by the viewfinder, including portrait sensors.
   let width = video.videoWidth, height = video.videoHeight;
@@ -51,7 +51,7 @@ export async function capture(video, filter) {
   }
   for (const quality of [.84, .74, .64, .54, .44, .34, .24, .14, .08]) {
     const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
-    if (!blob) throw new Error('Could not develop the photo. Try again.');
+    if (!blob) throw new Error('Could not save the photo. Try again.');
     if (blob.size <= photoLimits.maxBytes) return blob;
   }
   throw new Error('This photo was too large to save. Try a simpler scene.');

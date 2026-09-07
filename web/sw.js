@@ -1,4 +1,4 @@
-const CACHE = 'tenframes-shell-v2';
+const CACHE = 'tenframes-shell-v3';
 const SHELL = ['./', './index.html', './style.css', './display.ttf', './app.js', './api.js', './camera.js', './local-store.js', './gallery.js', './download.js', './config.js', './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png', './manifest.webmanifest'];
 self.addEventListener('install', event => { event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL))); });
 self.addEventListener('activate', event => { event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith('tenframes-shell-') && key !== CACHE).map(key => caches.delete(key))))); });

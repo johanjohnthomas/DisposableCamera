@@ -22,7 +22,7 @@ export async function addPhoto(grid, shot, getBlob, { admin = false } = {}) {
     button.onclick = () => {
       document.querySelector('#detail-photo').src = url;
       const link = document.querySelector('#download-photo'); link.href = url;
-      link.download = `tenframes-${(shot.username || 'memory').replace(/[^a-z0-9_-]/gi, '_')}-${shot.slot_number}.jpg`;
+      link.download = `tenframes-${(shot.username || 'photo').replace(/[^a-z0-9_-]/gi, '_')}-${shot.slot_number}.jpg`;
       link.onclick = async event => {
         if (!window.DisposableCameraDownloads) return;
         event.preventDefault(); link.textContent = 'Saving…';

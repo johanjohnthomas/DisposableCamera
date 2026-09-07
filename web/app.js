@@ -36,7 +36,7 @@ async function enableCamera() {
   try {
     await startCamera($('#video')); cameraReady = true;
     $('#camera-idle').hidden = true; $('#live-label').hidden = false;
-    status(pending ? 'One photo still needs to be saved. Tap Retry saving photo.' : state.remaining_count ? 'Your camera is ready. Find a little moment.' : 'That’s a wrap. All ten memories are in your roll.');
+    status(pending ? 'One photo still needs to be saved. Tap Retry saving photo.' : state.remaining_count ? 'Camera ready.' : 'All 10 photos used.');
   } catch (error) { status(cameraError(error), true); $('#retry-camera').hidden = false; }
   controls();
 }
@@ -47,14 +47,14 @@ async function openCamera() {
   $('#active-camera').append($('#camera-mount')); page('session');
   if (state.remaining_count === 0 && !pending) {
     cameraReady = false; stopCamera($('#video')); $('#camera-idle').hidden = false;
-    status('That’s a wrap. All ten memories are in your roll.'); controls();
+    status('All 10 photos used.'); controls();
   } else await enableCamera();
 }
 $('#join-form').addEventListener('submit', async event => {
   event.preventDefault();
   const name = $('#username').value.trim();
-  if (!name) { $('#join-status').textContent = 'Give your camera a name first.'; return; }
-  $('#join').disabled = true; $('#join-status').textContent = 'Getting your camera ready…';
+  if (!name) { $('#join-status').textContent = 'Enter your name.'; return; }
+  $('#join').disabled = true; $('#join-status').textContent = 'Opening camera…';
   try {
     if (demo) await write('demo:guest', name);
     else { if (!session()) await auth('signup', { data: {} }); await rpc('register_guest', { p_username: name }); }
@@ -67,7 +67,7 @@ async function savePending() {
   if (demo) {
     const shots = await read('demo:shots') || [];
     if (!shots.some(shot => shot.reservation_id === pending.requestId)) {
-      if (shots.length >= 10) throw new Error('Your roll is full.');
+      if (shots.length >= 10) throw new Error('All 10 photos used.');
       shots.push({ reservation_id: pending.requestId, slot_number: shots.length + 1, blob: pending.blob, filter_name: pending.filter, created_at: pending.createdAt });
       await write('demo:shots', shots);
     }
@@ -86,7 +86,7 @@ async function savePending() {
   }
   await write(pendingKey(), undefined); pending = undefined;
   await refreshState();
-  status(state.remaining_count ? `Saved${demo ? ' on this device' : ' to your roll'}. ${state.remaining_count} moments left.` : 'That’s a wrap. All ten memories are in your roll.');
+  status(state.remaining_count ? `Saved${demo ? ' on this device' : ''}. ${state.remaining_count} ${state.remaining_count === 1 ? 'photo' : 'photos'} left.` : 'All 10 photos used.');
   if (!state.remaining_count) { stopCamera($('#video')); cameraReady = false; $('#live-label').hidden = true; }
 }
 async function takePhoto(retry = false) {
@@ -99,14 +99,14 @@ async function takePhoto(retry = false) {
       if (!pending && retry) { await refreshState(); return; }
       if (!pending) {
         await refreshState();
-        if (!state.remaining_count) { status('Your roll is full. Open Your roll to see your photos.'); return; }
+        if (!state.remaining_count) { status('All 10 photos used. Open Photos to view them.'); return; }
         const blob = await capture($('#video'), filters[filterIndex].key);
         pending = { requestId: crypto.randomUUID(), blob, filter: filters[filterIndex].key, createdAt: new Date().toISOString() };
         await write(pendingKey(), pending);
         $('#shutter-flash').classList.remove('firing'); requestAnimationFrame(() => $('#shutter-flash').classList.add('firing'));
       }
       await write(pendingKey(), pending);
-      status(demo ? 'Developing your photo…' : 'Saving your photo. Stay here a moment…');
+      status(demo ? 'Saving photo…' : 'Saving photo…');
       await savePending();
     };
     if (navigator.locks) await navigator.locks.request(`capture:${scope()}`, work);
@@ -128,12 +128,12 @@ $('#filter-button').onclick = () => {
 };
 $('#roll-button').onclick = async () => {
   stopCamera($('#video')); cameraReady = false; page('gallery');
-  clearGallery($('#photo-grid')); $('#gallery-status').textContent = 'Opening your roll…';
+  clearGallery($('#photo-grid')); $('#gallery-status').textContent = 'Loading photos…';
   try {
     await refreshState();
-    $('#gallery-subtitle').textContent = `${state.finalized_count} of 10 memories${demo ? ' · Saved on this device' : ' · Shared with your host'}`;
+    $('#gallery-subtitle').textContent = `${state.finalized_count} of 10 photos${demo ? ' · Saved on this device' : ' · Shared with your host'}`;
     const shots = state.shots.filter(shot => demo || shot.status === 'finalized');
-    if (!shots.length) { const empty = document.createElement('p'); empty.className = 'empty-roll'; empty.textContent = 'Your story starts with the first frame. Go make a little memory.'; $('#photo-grid').append(empty); }
+    if (!shots.length) { const empty = document.createElement('p'); empty.className = 'empty-roll'; empty.textContent = 'No photos yet.'; $('#photo-grid').append(empty); }
     for (const shot of shots) await addPhoto($('#photo-grid'), shot, value => demo ? value.blob : photoBlob(value.object_path));
     $('#gallery-status').textContent = '';
   } catch (error) { $('#gallery-status').textContent = error.message; }
@@ -148,8 +148,8 @@ document.addEventListener('visibilitychange', () => {
   else if (state && !$('#session').hidden && state.remaining_count && !busy) enableCamera();
 });
 let installPrompt;
-window.addEventListener('beforeinstallprompt', event => { event.preventDefault(); installPrompt = event; $('#install').hidden = false; });
-$('#install').onclick = async () => { await installPrompt?.prompt(); $('#install').hidden = true; };
+window.addEventListener('beforeinstallprompt', event => { event.preventDefault(); installPrompt = event; $('#install').hidden = false; $('#install-footer').hidden = false; });
+$('#install').onclick = async () => { await installPrompt?.prompt(); $('#install').hidden = true; $('#install-footer').hidden = true; };
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('./sw.js').catch(() => {});
 (async () => {
   try { if (demo ? await read('demo:guest') : configured && session()) await openCamera(); }
