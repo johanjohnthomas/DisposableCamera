@@ -35,12 +35,13 @@ function applyFilm(data, filter) {
 export async function capture(video, filter) {
   if (!video.videoWidth || video.readyState < 2) throw new Error('The camera is starting. Try again.');
   const canvas = document.createElement('canvas');
-  // Match the 4:3 cover crop shown by the viewfinder, including portrait sensors.
+  // Match the cover crop shown by the viewfinder: 3:4 when it is upright, 4:3 otherwise.
+  const [across, down] = video.clientHeight > video.clientWidth ? [3, 4] : [4, 3];
   let width = video.videoWidth, height = video.videoHeight;
-  if (width / height > 4 / 3) width = height * 4 / 3;
-  else height = width * 3 / 4;
-  const aspectRatioUnit = Math.max(1, Math.floor(Math.min(width / 4, height / 3, photoLimits.width / 4, photoLimits.height / 3)));
-  canvas.width = aspectRatioUnit * 4; canvas.height = aspectRatioUnit * 3;
+  if (width / height > across / down) width = height * across / down;
+  else height = width * down / across;
+  const aspectRatioUnit = Math.max(1, Math.floor(Math.min(width / across, height / down, photoLimits.width / 4)));
+  canvas.width = aspectRatioUnit * across; canvas.height = aspectRatioUnit * down;
   const context = canvas.getContext('2d', { willReadFrequently: true });
   if (!context) throw new Error('This browser cannot process photos. Try Safari or Chrome.');
   context.drawImage(video, (video.videoWidth - width) / 2, (video.videoHeight - height) / 2, width, height, 0, 0, canvas.width, canvas.height);

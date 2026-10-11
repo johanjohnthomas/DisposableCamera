@@ -4,22 +4,26 @@ import { read, write } from './local-store.js';
 import { filters, startCamera, stopCamera, capture, cameraError } from './camera.js';
 import { clearGallery, addPhoto, initDialog } from './gallery.js';
 const $ = selector => document.querySelector(selector);
-let state, pending, filterIndex = 0, busy = false, cameraReady = false;
+let state, pending, filterIndex = 0, busy = false, cameraReady = false, current = 'welcome';
 const scope = () => demo ? 'demo' : `${config.supabaseUrl}:${session()?.user.id}`;
 const pendingKey = () => `pending:${scope()}`;
 const status = (message, error = false) => { $('#camera-status').textContent = message; $('#camera-status').classList.toggle('error', error); };
-const page = name => { for (const id of ['welcome', 'session', 'gallery']) $(`#${id}`).hidden = id !== name; window.scrollTo(0, 0); };
+// Welcome and session both live inside the full-screen camera; the gallery is a separate page.
+const page = name => {
+  current = name; $('#camera').hidden = name === 'gallery'; $('#gallery').hidden = name !== 'gallery'; $('#welcome').hidden = name !== 'welcome';
+  document.body.classList.toggle('in-camera', name !== 'gallery'); window.scrollTo(0, 0);
+};
 function controls() {
   $('#remaining').textContent = String(state?.remaining_count ?? 10).padStart(2, '0');
   $('#roll-count').textContent = state?.finalized_count ?? 0;
   $('#shutter').disabled = busy || !cameraReady || Boolean(pending) || state?.remaining_count <= 0;
-  $('#filter-button').disabled = busy || Boolean(pending);
-  $('#roll-button').disabled = busy;
+  $('#filter-button').disabled = !state || busy || Boolean(pending);
+  $('#roll-button').disabled = !state || busy;
   $('#retry-upload').hidden = !pending || busy;
   $('#film-strip').replaceChildren(...Array.from({ length: 10 }, (_, i) => {
-    const cell = document.createElement('span'); cell.className = `film-cell${i < state.reserved_count ? ' filled' : ''}`;
+    const cell = document.createElement('span'); cell.className = `film-cell${i < state?.reserved_count ? ' filled' : ''}`;
     cell.textContent = String(i + 1).padStart(2, '0');
-    cell.setAttribute('aria-label', `Frame ${i + 1}, ${i < state.finalized_count ? 'saved' : i < state.reserved_count ? 'reserved' : 'available'}`);
+    cell.setAttribute('aria-label', `Frame ${i + 1}, ${i < state?.finalized_count ? 'saved' : i < state?.reserved_count ? 'reserved' : 'available'}`);
     return cell;
   }));
 }
@@ -44,7 +48,7 @@ async function openCamera() {
   await refreshState();
   pending = await read(pendingKey());
   $('#guest-name').textContent = state.username;
-  $('#active-camera').append($('#camera-mount')); page('session');
+  $('#camera-owner').hidden = false; page('session');
   if (state.remaining_count === 0 && !pending) {
     cameraReady = false; stopCamera($('#video')); $('#camera-idle').hidden = false;
     status('All 10 photos used.'); controls();
@@ -114,7 +118,7 @@ async function takePhoto(retry = false) {
   } catch (error) { status(pending ? `Photo not saved yet. ${error.message} Your photo is kept here for retry.` : `Couldn’t take a photo. ${error.message}`, true); }
   finally {
     busy = false; controls();
-    if (!document.hidden && !$('#session').hidden && !cameraReady && state.remaining_count > 0) await enableCamera();
+    if (!document.hidden && current === 'session' && !cameraReady && state.remaining_count > 0) await enableCamera();
   }
 }
 $('#shutter').onclick = () => takePhoto();
@@ -141,15 +145,15 @@ $('#roll-button').onclick = async () => {
 $('#back-camera').onclick = () => { clearGallery($('#photo-grid')); openCamera().catch(error => { $('#gallery-status').textContent = error.message; }); };
 initDialog();
 for (const label of document.querySelectorAll('[data-event]')) label.textContent = config.eventName;
-$('#demo-banner').hidden = !demo; $('#setup-note').hidden = configured || demo; $('#join').disabled = !configured && !demo;
+$('#demo-banner').hidden = !demo; $('#setup-note').hidden = configured || demo; $('#join').disabled = !configured && !demo; controls();
 window.addEventListener('offline', () => status('You’re offline. A captured photo stays here until you retry saving online.', true));
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) { stopCamera($('#video')); cameraReady = false; if (state) controls(); }
-  else if (state && !$('#session').hidden && state.remaining_count && !busy) enableCamera();
+  else if (state && current === 'session' && state.remaining_count && !busy) enableCamera();
 });
 let installPrompt;
-window.addEventListener('beforeinstallprompt', event => { event.preventDefault(); installPrompt = event; $('#install').hidden = false; $('#install-footer').hidden = false; });
-$('#install').onclick = async () => { await installPrompt?.prompt(); $('#install').hidden = true; $('#install-footer').hidden = true; };
+window.addEventListener('beforeinstallprompt', event => { event.preventDefault(); installPrompt = event; $('#install').hidden = false; });
+$('#install').onclick = async () => { await installPrompt?.prompt(); $('#install').hidden = true; };
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('./sw.js').catch(() => {});
 (async () => {
   try { if (demo ? await read('demo:guest') : configured && session()) await openCamera(); }
