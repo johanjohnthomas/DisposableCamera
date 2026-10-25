@@ -4,30 +4,35 @@ import { addPhoto, clearGallery, initDialog } from './gallery.js';
 import { makeZip } from './zip.js';
 import { download } from './download.js';
 const $ = selector => document.querySelector(selector);
-let shots = [], more = false, loading = false, renderVersion = 0;
+let shots = [], loading = false, renderVersion = 0;
 const filtered = () => shots.filter(shot => shot.username.toLocaleLowerCase().includes($('#search').value.toLocaleLowerCase().trim()));
 function status(text) { $('#admin-status').textContent = text; }
 async function render() {
   const version = ++renderVersion;
   clearGallery($('#photo-grid'));
   const shown = filtered(); $('#photo-count').textContent = `${shown.length} ${shown.length === 1 ? 'photo' : 'photos'} loaded`;
-  $('#download-all').disabled = !shown.length;
+  $('#download-all').disabled = !shots.length;
   if (!shown.length) { const empty = document.createElement('p'); empty.className = 'empty-roll'; empty.textContent = shots.length ? 'No guests match that name.' : 'No photos yet.'; $('#photo-grid').append(empty); }
   for (let i = 0; i < shown.length; i += 4) {
     if (version !== renderVersion) return;
     await Promise.all(shown.slice(i, i + 4).map(shot => addPhoto($('#photo-grid'), shot, value => photoBlob(value.object_path, 'admin'), { admin: true })));
   }
 }
-async function load(reset = true) {
+// The server pages results 50 at a time, so keep asking until a short page signals the end.
+async function fetchAll() {
+  const all = [];
+  for (let page; !page || page.length === 50;) {
+    status(`Loading photos… ${all.length} so far`);
+    page = (await rpc('list_event_photos', { p_offset: all.length, p_limit: 50 }, 'admin')).photos; all.push(...page);
+  }
+  return all;
+}
+async function load() {
   if (loading) return;
-  loading = true; $('#load-more').disabled = true; $('#refresh').disabled = true; status('Loading photos…');
-  try {
-    const result = await rpc('list_event_photos', { p_offset: reset ? 0 : shots.length, p_limit: 50 }, 'admin');
-    shots = reset ? result.photos : [...shots, ...result.photos];
-    more = result.photos.length === 50; $('#load-more').hidden = !more;
-    await render(); status(more ? 'Load more to include the next 50 photos in your gallery.' : 'All event photos are loaded.');
-  } catch (error) { status(error.message); }
-  finally { loading = false; $('#load-more').disabled = false; $('#refresh').disabled = false; }
+  loading = true; $('#refresh').disabled = true;
+  try { shots = await fetchAll(); status('All event photos are loaded.'); await render(); }
+  catch (error) { status(error.message); }
+  finally { loading = false; $('#refresh').disabled = false; }
 }
 async function enter() {
   if (!await rpc('is_event_admin', {}, 'admin')) throw new Error('This account doesn’t have host access. Ask the event owner to add it as an admin.');
@@ -46,22 +51,24 @@ $('#sign-out').onclick = async () => {
 };
 let searchTimer;
 $('#search').oninput = () => { clearTimeout(searchTimer); searchTimer = setTimeout(render, 200); };
-$('#refresh').onclick = () => load(); $('#load-more').onclick = () => load(false);
+$('#refresh').onclick = () => load();
 $('#download-all').onclick = async () => {
-  const selected = filtered(); $('#download-all').disabled = true;
+  $('#download-all').disabled = true;
   try {
-    // Small batches cap memory on phones and avoid a single event-sized archive.
-    for (let start = 0; start < selected.length; start += 50) {
-      const files = [];
-      for (const shot of selected.slice(start, start + 50)) {
-        status(`Preparing photo ${start + files.length + 1} of ${selected.length}…`);
-        files.push({ name: `${shot.username.replace(/[^a-z0-9_-]/gi, '_')}-${shot.reservation_id}-${shot.slot_number}.jpg`, blob: await photoBlob(shot.object_path, 'admin') });
-      }
-      await download(await makeZip(files), `tenframes-${Math.floor(start / 50) + 1}.zip`);
+    // Re-fetch so photos taken since the gallery last loaded are included too.
+    const all = await fetchAll();
+    const query = $('#search').value.toLocaleLowerCase().trim(), selected = all.filter(shot => shot.username.toLocaleLowerCase().includes(query));
+    if (!selected.length) { status(query ? 'No guests match that name.' : 'No photos yet.'); return; }
+    const files = [];
+    for (const shot of selected) {
+      status(`Preparing photo ${files.length + 1} of ${selected.length}…`);
+      files.push({ name: `${shot.username.replace(/[^a-z0-9_-]/gi, '_')}-${shot.reservation_id}-${shot.slot_number}.jpg`, blob: await photoBlob(shot.object_path, 'admin') });
     }
-    status('Download ready. For several archives, allow multiple downloads in your browser.');
+    status('Building zip…');
+    await download(await makeZip(files), 'tenframes.zip');
+    status(`Download ready with ${selected.length} ${selected.length === 1 ? 'photo' : 'photos'}.`);
   } catch (error) { status(`Download failed: ${error.message} You can retry.`); }
-  finally { $('#download-all').disabled = false; }
+  finally { $('#download-all').disabled = !shots.length; }
 };
 initDialog(); $('#event-title').textContent = config.eventName;
 if (!configured) { $('#sign-in').disabled = true; $('#login-status').textContent = 'Connect your Supabase project in config.js to enable host sign-in.'; }

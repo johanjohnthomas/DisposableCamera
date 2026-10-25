@@ -11,7 +11,8 @@ export async function makeZip(files) {
     const filename = new TextEncoder().encode(name), bytes = new Uint8Array(await blob.arrayBuffer()), crc = crc32(bytes);
     const local = header(30); local.view.setUint32(0, 0x04034b50, true); local.view.setUint16(4, 20, true); local.view.setUint16(6, 0x800, true);
     local.view.setUint32(14, crc, true); local.view.setUint32(18, bytes.length, true); local.view.setUint32(22, bytes.length, true); local.view.setUint16(26, filename.length, true);
-    parts.push(local.bytes, filename, bytes);
+    // Keep the Blob rather than the copied bytes so one event-sized archive stays light on memory.
+    parts.push(local.bytes, filename, blob);
     const central = header(46); central.view.setUint32(0, 0x02014b50, true); central.view.setUint16(4, 20, true); central.view.setUint16(6, 20, true); central.view.setUint16(8, 0x800, true);
     central.view.setUint32(16, crc, true); central.view.setUint32(20, bytes.length, true); central.view.setUint32(24, bytes.length, true); central.view.setUint16(28, filename.length, true); central.view.setUint32(42, offset, true);
     directory.push(central.bytes, filename); offset += 30 + filename.length + bytes.length; directorySize += 46 + filename.length;
