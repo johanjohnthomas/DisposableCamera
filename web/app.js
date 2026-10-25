@@ -20,12 +20,6 @@ function controls() {
   $('#filter-button').disabled = !state || busy || Boolean(pending);
   $('#roll-button').disabled = !state || busy;
   $('#retry-upload').hidden = !pending || busy;
-  $('#film-strip').replaceChildren(...Array.from({ length: 10 }, (_, i) => {
-    const cell = document.createElement('span'); cell.className = `film-cell${i < state?.reserved_count ? ' filled' : ''}`;
-    cell.textContent = String(i + 1).padStart(2, '0');
-    cell.setAttribute('aria-label', `Frame ${i + 1}, ${i < state?.finalized_count ? 'saved' : i < state?.reserved_count ? 'reserved' : 'available'}`);
-    return cell;
-  }));
 }
 async function refreshState() {
   if (demo) {
